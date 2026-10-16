@@ -18,13 +18,13 @@ Anima base(28블록)와 Anima 2.9B(40블록)에서 모델, LoRA, 3D 포즈를 �
 
 ## 다른 PC에서 이 PC와 같이 쓰려면
 
-1. 이 저장소를 `ComfyUI/custom_nodes/ComfyUI-Anima3DPoseControl`에 클론합니다. 예전에 `ComfyUI-AnimaSeedLoader`라는 폴더가 있으면 지우고 이 폴더만 둡니다. 둘 다 있으면 같은 노드가 두 번 등록됩니다.
+1. 이 저장소를 `ComfyUI/custom_nodes/ComfyUI-Anima3DPoseControl`에 클론합니다. 
 2. ComfyUI를 다시 시작합니다. 이 PC는 ComfyUI 0.40.0입니다. `Anima 포즈 적용`은 본체에 있는 Anima LLLite(`AnimaLLLiteApply`)를 사용합니다.
 3. 모델 파일을 같은 종류의 폴더에 넣습니다. 파일 이름은 워크플로에 저장된 것과 같아야 합니다.
 
 이 PC의 로더가 읽는 파일은 다음과 같습니다.
 
-- UNET: `models/unet/Anima/` 아래의 base 또는 2.9B. 예: `anima_baseV10.safetensors`, `silvermoonmixAnimaEvolved_v2329B_bf16.safetensors`
+- UNET: `models/unet/Anima/` 아래의 base 또는 2.9B. 예: `anima_baseV10.safetensors`, `anima29B_v10_bf16.safetensors`
 - CLIP: `models/text_encoders/qwen_3_06b_base.safetensors`
 - VAE: `models/vae/qwen_image_vae.safetensors`
 - 3D 포즈 패치: `models/model_patches/anima_3dpose_6200.safetensors`
