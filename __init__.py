@@ -15,6 +15,7 @@ import nodes
 
 from .anima_camera import NODE_CLASS_MAPPINGS as _CAMERA_NODE_CLASS_MAPPINGS
 from .anima_camera import NODE_DISPLAY_NAME_MAPPINGS as _CAMERA_NODE_DISPLAY_NAME_MAPPINGS
+from .anima_pose import AnimaPoseApply
 from .anima_prompt import AnimaRegionBase, register_routes
 
 ANIMA_BASE_BLOCKS = 28
@@ -239,12 +240,14 @@ NODE_CLASS_MAPPINGS = {
     "AnimaModelLoader": AnimaModelLoader,
     "AnimaLoraPrompt": AnimaLoraPrompt,
     "AnimaRegionBase": AnimaRegionBase,
+    "AnimaPoseApply": AnimaPoseApply,
     **_CAMERA_NODE_CLASS_MAPPINGS,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "AnimaModelLoader": "Anima 모델 로더",
     "AnimaLoraPrompt": "Anima LoRA 프롬프트",
     "AnimaRegionBase": "리전 기본 프롬프트",
+    "AnimaPoseApply": "Anima 포즈 적용",
     **_CAMERA_NODE_DISPLAY_NAME_MAPPINGS,
 }
 
