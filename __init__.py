@@ -15,6 +15,7 @@ import nodes
 
 from .anima_camera import NODE_CLASS_MAPPINGS as _CAMERA_NODE_CLASS_MAPPINGS
 from .anima_camera import NODE_DISPLAY_NAME_MAPPINGS as _CAMERA_NODE_DISPLAY_NAME_MAPPINGS
+from .anima_prompt import AnimaRegionBase, register_routes
 
 ANIMA_BASE_BLOCKS = 28
 ANIMA_29B_BLOCKS = 40
@@ -228,7 +229,7 @@ class AnimaLoraPrompt:
     RETURN_NAMES = ("prompt",)
     FUNCTION = "join"
     CATEGORY = "Anima/Loaders"
-    DESCRIPTION = "LoRA 프리셋의 스타일 문장과 트리거를 긍정 프롬프트 앞에 붙입니다."
+    DESCRIPTION = "스타일 문장과 켜진 T+ 트리거를 긍정 프롬프트 앞에 붙입니다. 아래 칸에 합쳐진 문장이 보입니다."
 
     def join(self, prompt, style_prompt="", trigger_words=""):
         return (_join_prompt(style_prompt, trigger_words, prompt),)
@@ -237,12 +238,15 @@ class AnimaLoraPrompt:
 NODE_CLASS_MAPPINGS = {
     "AnimaModelLoader": AnimaModelLoader,
     "AnimaLoraPrompt": AnimaLoraPrompt,
+    "AnimaRegionBase": AnimaRegionBase,
     **_CAMERA_NODE_CLASS_MAPPINGS,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "AnimaModelLoader": "Anima 모델 로더",
     "AnimaLoraPrompt": "Anima LoRA 프롬프트",
+    "AnimaRegionBase": "리전 기본 프롬프트",
     **_CAMERA_NODE_DISPLAY_NAME_MAPPINGS,
 }
 
 WEB_DIRECTORY = "./web"
+register_routes()
