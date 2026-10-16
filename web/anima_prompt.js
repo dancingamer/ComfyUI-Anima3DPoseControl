@@ -33,6 +33,22 @@ function clean(value) {
     return String(value || "").trim().replace(/^,+|,+$/g, "").trim();
 }
 
+function profileStyle(preset) {
+    const index = String(widget(preset, "profile_index")?.value || "1");
+    let data = widget(preset, "profile_data")?.value;
+    try {
+        data = typeof data === "string" ? JSON.parse(data || "{}") : (data || {});
+    } catch {
+        data = {};
+    }
+    const profile = data?.[index];
+    return clean(profile?.style_prompt);
+}
+
+function promptInput(item) {
+    return item?.inputEl || item?.element?.querySelector?.("textarea") || null;
+}
+
 app.registerExtension({
     name: "AnimaSeedLoader.PromptPreview",
     async beforeRegisterNodeDef(nodeType, nodeData) {
@@ -56,16 +72,40 @@ app.registerExtension({
                 getMinHeight: () => 160,
             });
 
+            const promptWidget = widget(this, "prompt");
+            this._ownPrompt = String(promptWidget?.value || "");
+            if (promptWidget) {
+                const node = this;
+                promptWidget.serializeValue = () => node._ownPrompt || "";
+            }
+
             let timer = 0;
             let lastKey = "";
             const refresh = async () => {
                 const preset = sourceNode(this, "style_prompt") || sourceNode(this, "trigger_words");
-                const style = clean(widget(preset, "style_prompt")?.value);
+                const typedStyle = clean(widget(preset, "style_prompt")?.value);
+                const style = typedStyle || profileStyle(preset);
                 const loras = parseLoras(preset);
-                const prompt = clean(widget(this, "prompt")?.value);
+                const promptInputEl = promptInput(promptWidget);
+                if (promptInputEl && !promptInputEl.dataset.animaBound) {
+                    promptInputEl.dataset.animaBound = "1";
+                    promptInputEl.addEventListener("focus", () => {
+                        promptInputEl.value = this._ownPrompt || "";
+                    });
+                    promptInputEl.addEventListener("input", () => {
+                        this._ownPrompt = promptInputEl.value;
+                        if (promptWidget) {
+                            promptWidget.value = this._ownPrompt;
+                        }
+                        lastKey = "";
+                    });
+                }
+                const ownPrompt = document.activeElement === promptInputEl
+                    ? clean(promptInputEl.value)
+                    : clean(this._ownPrompt);
                 const active = loras.filter((row) => row && row.on !== false && row.use_trigger_words !== false && row.name && row.name !== "None");
                 const armedOff = loras.filter((row) => row && row.on === false && row.use_trigger_words !== false && row.name && row.name !== "None");
-                const key = JSON.stringify({style, prompt, active: active.map((row) => row.name), off: armedOff.length});
+                const key = JSON.stringify({style, ownPrompt, active: active.map((row) => row.name), off: armedOff.length, focused: document.activeElement === promptInputEl});
                 if (key === lastKey) {
                     return;
                 }
@@ -85,7 +125,11 @@ app.registerExtension({
                     missing = data.missing || [];
                 }
                 lastKey = key;
-                const lines = [clean([style, triggers.join(", "), prompt].filter(Boolean).join(", "))];
+                const shown = clean([style, triggers.join(", "), ownPrompt].filter(Boolean).join(", "));
+                if (promptInputEl && document.activeElement !== promptInputEl) {
+                    promptInputEl.value = shown;
+                }
+                const lines = [shown];
                 if (missing.length) {
                     lines.push("", "트리거 태그가 없는 LoRA: " + missing.join(", "));
                 }
