@@ -13,6 +13,9 @@ import comfy.utils
 import folder_paths
 import nodes
 
+from .anima_camera import NODE_CLASS_MAPPINGS as _CAMERA_NODE_CLASS_MAPPINGS
+from .anima_camera import NODE_DISPLAY_NAME_MAPPINGS as _CAMERA_NODE_DISPLAY_NAME_MAPPINGS
+
 ANIMA_BASE_BLOCKS = 28
 ANIMA_29B_BLOCKS = 40
 ANIMA_29B_INSERTS = (2, 5, 8, 11, 14, 17, 21, 24, 27, 30, 33, 36)
@@ -234,8 +237,12 @@ class AnimaLoraPrompt:
 NODE_CLASS_MAPPINGS = {
     "AnimaModelLoader": AnimaModelLoader,
     "AnimaLoraPrompt": AnimaLoraPrompt,
+    **_CAMERA_NODE_CLASS_MAPPINGS,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "AnimaModelLoader": "Anima 모델 로더",
     "AnimaLoraPrompt": "Anima LoRA 프롬프트",
+    **_CAMERA_NODE_DISPLAY_NAME_MAPPINGS,
 }
+
+WEB_DIRECTORY = "./web"
