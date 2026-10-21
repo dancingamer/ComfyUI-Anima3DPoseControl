@@ -3,9 +3,15 @@
 A pose patch trained on the base model names its blocks 0–27. Anima 2.9B has
 40 blocks, with 12 new blocks inserted between the original ones. This node
 sends each original block's pose residual to that block's 2.9B index.
+Inserted blocks are skipped until a LoRA is already on the model. The LoRA
+lands on the original blocks only, and the untouched inserted blocks then
+wash the pose out, so those blocks repeat the previous original residual.
+A LoRA on the self-attention projections rotates that residual, so those
+projections keep the base weight while the LoRA stays on the other layers.
 """
 
 import torch
+import uuid
 
 import comfy.ldm.anima.lllite as lllite
 from comfy_extras.nodes_model_patch import AnimaLLLiteApply
@@ -38,8 +44,17 @@ def _legacy_index_map(model, model_patch):
         return None
     if unet_config.get("num_blocks") != 40:
         return None
-    from . import ANIMA_29B_LEGACY_MAP
-    return {new: old for old, new in enumerate(ANIMA_29B_LEGACY_MAP)}
+    from . import ANIMA_29B_BLOCKS, ANIMA_29B_LEGACY_MAP
+    inverse = {new: old for old, new in enumerate(ANIMA_29B_LEGACY_MAP)}
+    if not getattr(model, "patches", None):
+        return inverse
+    filled = {}
+    previous = inverse[ANIMA_29B_LEGACY_MAP[0]]
+    for index in range(ANIMA_29B_BLOCKS):
+        if index in inverse:
+            previous = inverse[index]
+        filled[index] = previous
+    return filled
 
 
 class _MappedAttention:
@@ -57,6 +72,25 @@ class _MappedAttention:
             forwarded = dict(extra_options)
             forwarded["block_index"] = mapped
         return self.inner(q, k, v, pe=pe, attn_mask=attn_mask, extra_options=forwarded)
+
+
+_POSE_LORA_PARTS = (
+    "self_attn.q_proj",
+    "self_attn.k_proj",
+    "self_attn.v_proj",
+    "self_attn.output_proj",
+    "adaln_modulation_self_attn",
+)
+
+
+def _drop_pose_layer_loras(model):
+    removed = False
+    for key in list(model.patches):
+        if any(part in key for part in _POSE_LORA_PARTS):
+            del model.patches[key]
+            removed = True
+    if removed:
+        model.patches_uuid = uuid.uuid4()
 
 
 class _MappedMLP:
@@ -115,6 +149,8 @@ class AnimaPoseApply:
         sigma_end = float(model_sampling.percent_to_sigma(end_percent))
         patch = lllite.AnimaLLLitePatch(model_patch, image, mask, strength, sigma_start, sigma_end)
         model_patched = model.clone()
+        if model_patched.patches:
+            _drop_pose_layer_loras(model_patched)
         model_patched.set_model_post_input_patch(patch)
         model_patched.set_model_attn1_patch(_MappedAttention(lllite.AnimaLLLiteAttentionPatch(
             patch,

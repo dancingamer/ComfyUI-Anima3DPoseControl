@@ -54,6 +54,72 @@ function current(node) {
     };
 }
 
+function lakisTags(x, y, z, roll, frameY) {
+    const clampAxis = (value) => Math.max(-1, Math.min(1, Number(value) || 0));
+    x = clampAxis(x);
+    y = clampAxis(y);
+    z = clampAxis(z);
+    roll = clampAxis(roll);
+    frameY = clampAxis(frameY);
+    const degrees = x * 180;
+    const side = Math.abs(degrees);
+    const right = degrees >= 0;
+    let sideWeight = 0;
+    let backWeight = 0;
+    if (side <= 90) {
+        sideWeight = side / 90;
+    } else {
+        sideWeight = (180 - side) / 90;
+        backWeight = (side - 90) / 90;
+    }
+    const tags = [];
+    if (sideWeight >= 0.2) {
+        tags.push(`(${right ? "from_right" : "from_left"}:${sideWeight.toFixed(2)})`);
+    }
+    if (backWeight >= 0.2) {
+        tags.push(`(from_behind:${backWeight.toFixed(2)})`);
+    }
+    if (side < 18) {
+        tags.push("front view");
+    } else if (side < 70) {
+        tags.push(right ? "front-right quarter view" : "front-left quarter view");
+    } else if (side < 112) {
+        tags.push(right ? "right side view" : "left side view");
+    } else if (side < 162) {
+        tags.push(right ? "back-right quarter view" : "back-left quarter view");
+    } else {
+        tags.push("back view");
+    }
+    const elevation = y * 90;
+    if (elevation >= 35) {
+        tags.push("high-angle shot");
+    } else if (elevation >= 12) {
+        tags.push("elevated shot");
+    } else if (elevation <= -12) {
+        tags.push("low-angle shot");
+    } else {
+        tags.push("eye-level shot");
+    }
+    if (z >= 0.45) {
+        tags.push("close-up");
+    } else if (z <= -0.45) {
+        tags.push("wide shot");
+    } else {
+        tags.push("medium shot");
+    }
+    if (Math.abs(roll) >= 0.2) {
+        tags.push("dutch angle");
+    }
+    if (frameY >= 0.25) {
+        tags.push("upper frame");
+    } else if (frameY <= -0.25) {
+        tags.push("lower frame");
+    }
+    return tags.join(", ");
+}
+
+window.AnimaLakisCamera = {tags: lakisTags};
+
 function angleLabel(x) {
     const degrees = Math.round(Math.abs(x) * 180);
     if (degrees <= 8) {

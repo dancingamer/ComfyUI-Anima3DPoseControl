@@ -223,6 +223,7 @@ class AnimaLoraPrompt:
             "optional": {
                 "style_prompt": ("STRING", {"forceInput": True}),
                 "trigger_words": ("STRING", {"forceInput": True}),
+                "camera_prompt": ("STRING", {"forceInput": True}),
             },
         }
 
@@ -230,10 +231,10 @@ class AnimaLoraPrompt:
     RETURN_NAMES = ("prompt",)
     FUNCTION = "join"
     CATEGORY = "Anima/Loaders"
-    DESCRIPTION = "스타일 문장과 켜진 T+ 트리거를 긍정 프롬프트 앞에 붙입니다. 아래 칸에 합쳐진 문장이 보입니다."
+    DESCRIPTION = "스타일 문장과 켜진 T+ 트리거를 긍정 프롬프트 앞에 붙입니다. 카메라 문장이 있으면 그 앞에 붙습니다."
 
-    def join(self, prompt, style_prompt="", trigger_words=""):
-        return (_join_prompt(style_prompt, trigger_words, prompt),)
+    def join(self, prompt, style_prompt="", trigger_words="", camera_prompt=""):
+        return (_join_prompt(camera_prompt, style_prompt, trigger_words, prompt),)
 
 
 NODE_CLASS_MAPPINGS = {

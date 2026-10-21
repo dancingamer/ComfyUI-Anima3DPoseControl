@@ -5,11 +5,23 @@ function widget(node, name) {
 }
 
 function sourceNode(node, inputName) {
-    const input = node.inputs?.find((item) => item.name === inputName);
-    if (!input || input.link == null) {
+    const index = node?.inputs?.findIndex((item) => item?.name === inputName) ?? -1;
+    if (index >= 0 && typeof node.getInputNode === "function") {
+        try {
+            const found = node.getInputNode(index);
+            if (found) {
+                return found;
+            }
+        } catch {
+            return null;
+        }
+    }
+    const input = node?.inputs?.find((item) => item?.name === inputName);
+    if (!input || input.link == null || !node.graph) {
         return null;
     }
-    const link = node.graph?.links?.[input.link];
+    const links = node.graph.links;
+    const link = links?.get?.(input.link) || links?.[input.link];
     if (!link) {
         return null;
     }
@@ -45,6 +57,60 @@ function profileStyle(preset) {
     return clean(profile?.style_prompt);
 }
 
+function isCamera(node) {
+    const name = node?.comfyClass || node?.constructor?.comfyClass || node?.type;
+    return name === "CameraControlNode";
+}
+
+function nodeClass(node) {
+    return node?.comfyClass || node?.constructor?.comfyClass || node?.type || "";
+}
+
+function cameraPrompt(node) {
+    const core = window.BskCameraCore;
+    if (!isCamera(node) || !core) {
+        return "";
+    }
+    const number = (name) => {
+        const value = parseFloat(widget(node, name)?.value);
+        return Number.isFinite(value) ? value : 0;
+    };
+    const config = core.loadConfig(widget(node, "config")?.value);
+    return clean(core.computePrompt(number("pos_x"), number("pos_y"), number("pos_z"), number("roll"), config));
+}
+
+function lakisPrompt(node) {
+    if (nodeClass(node) !== "AnimaCameraPanel" || widget(node, "enabled")?.value === false) {
+        return "";
+    }
+    const tags = window.AnimaLakisCamera?.tags;
+    if (!tags) {
+        return "";
+    }
+    const number = (name) => {
+        const value = parseFloat(widget(node, name)?.value);
+        return Number.isFinite(value) ? value : 0;
+    };
+    return clean(tags(number("pos_x"), number("pos_y"), number("pos_z"), number("roll"), number("frame_y")));
+}
+
+function activeCamera(node) {
+    const source = sourceNode(node, "camera_prompt");
+    if (nodeClass(source) !== "AnimaCameraSource") {
+        return source;
+    }
+    const choice = String(widget(source, "source")?.value || "BSK");
+    return sourceNode(source, choice === "LAKIS" ? "lakis" : "bsk");
+}
+
+function cameraText(node) {
+    const selected = activeCamera(node);
+    if (isCamera(selected)) {
+        return cameraPrompt(selected);
+    }
+    return lakisPrompt(selected);
+}
+
 function promptInput(item) {
     return item?.inputEl || item?.element?.querySelector?.("textarea") || null;
 }
@@ -61,11 +127,12 @@ app.registerExtension({
             const box = document.createElement("textarea");
             box.readOnly = true;
             box.placeholder = "스타일 태그와 켜진 T+ 트리거가 여기에 표시됩니다.";
-            box.style.cssText = "width:100%;height:128px;box-sizing:border-box;background:#1b1e27;color:#d7dbe6;border:1px solid #3a4154;border-radius:8px;padding:8px;resize:vertical;font:12px/1.45 sans-serif;";
+            box.style.cssText = "flex:1 1 auto;width:100%;min-height:120px;box-sizing:border-box;background:#1b1e27;color:#d7dbe6;border:1px solid #3a4154;border-radius:8px;padding:8px;resize:none;overflow:auto;font:12px/1.45 sans-serif;";
             const label = document.createElement("div");
             label.textContent = "적용될 프롬프트";
-            label.style.cssText = "color:#9aa3b5;font:12px sans-serif;margin:0 0 4px;";
+            label.style.cssText = "flex:0 0 auto;color:#9aa3b5;font:12px sans-serif;margin:0 0 4px;";
             const root = document.createElement("div");
+            root.style.cssText = "display:flex;flex-direction:column;width:100%;height:100%;min-height:0;box-sizing:border-box;";
             root.append(label, box);
             this.addDOMWidget("applied_prompt", "div", root, {
                 serialize: false,
@@ -78,6 +145,10 @@ app.registerExtension({
                 const node = this;
                 promptWidget.serializeValue = () => node._ownPrompt || "";
             }
+            const applied = widget(this, "applied_prompt");
+            if (applied) {
+                applied.serialize = false;
+            }
 
             let timer = 0;
             let lastKey = "";
@@ -86,6 +157,7 @@ app.registerExtension({
                 const typedStyle = clean(widget(preset, "style_prompt")?.value);
                 const style = typedStyle || profileStyle(preset);
                 const loras = parseLoras(preset);
+                const camera = cameraText(this);
                 const promptInputEl = promptInput(promptWidget);
                 if (promptInputEl && !promptInputEl.dataset.animaBound) {
                     promptInputEl.dataset.animaBound = "1";
@@ -100,12 +172,16 @@ app.registerExtension({
                         lastKey = "";
                     });
                 }
+                const storedPrompt = clean(promptWidget?.value);
+                if (!this._ownPrompt && storedPrompt) {
+                    this._ownPrompt = storedPrompt;
+                }
                 const ownPrompt = document.activeElement === promptInputEl
                     ? clean(promptInputEl.value)
                     : clean(this._ownPrompt);
                 const active = loras.filter((row) => row && row.on !== false && row.use_trigger_words !== false && row.name && row.name !== "None");
                 const armedOff = loras.filter((row) => row && row.on === false && row.use_trigger_words !== false && row.name && row.name !== "None");
-                const key = JSON.stringify({style, ownPrompt, active: active.map((row) => row.name), off: armedOff.length, focused: document.activeElement === promptInputEl});
+                const key = JSON.stringify({camera, style, ownPrompt, active: active.map((row) => row.name), off: armedOff.length, focused: document.activeElement === promptInputEl});
                 if (key === lastKey) {
                     return;
                 }
@@ -125,9 +201,12 @@ app.registerExtension({
                     missing = data.missing || [];
                 }
                 lastKey = key;
-                const shown = clean([style, triggers.join(", "), ownPrompt].filter(Boolean).join(", "));
+                const shown = clean([camera, style, triggers.join(", "), ownPrompt].filter(Boolean).join(", "));
                 if (promptInputEl && document.activeElement !== promptInputEl) {
                     promptInputEl.value = shown;
+                    if (promptWidget) {
+                        promptWidget.value = this._ownPrompt || "";
+                    }
                 }
                 const lines = [shown];
                 if (missing.length) {
@@ -149,6 +228,16 @@ app.registerExtension({
                 }, 700);
             };
             tick();
+            const configured = this.onConfigure;
+            this.onConfigure = function () {
+                const result = configured?.apply(this, arguments);
+                const loaded = String(widget(this, "prompt")?.value || "");
+                if (loaded) {
+                    this._ownPrompt = loaded;
+                }
+                lastKey = "";
+                return result;
+            };
             const removed = this.onRemoved;
             this.onRemoved = function () {
                 window.clearTimeout(timer);

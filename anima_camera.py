@@ -136,9 +136,35 @@ class AnimaCameraPanel:
         return (camera, combined)
 
 
+class AnimaCameraSource:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "source": (["BSK", "LAKIS"], {"default": "BSK"}),
+            },
+            "optional": {
+                "bsk": ("STRING", {"forceInput": True}),
+                "lakis": ("STRING", {"forceInput": True}),
+            },
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("camera_prompt",)
+    FUNCTION = "pick"
+    CATEGORY = "Anima/Camera"
+    DESCRIPTION = "BSK 카메라 문장과 구도 설정 문장 중 하나를 프롬프트 앞에 붙입니다."
+
+    def pick(self, source, bsk="", lakis=""):
+        chosen = bsk if source == "BSK" else lakis
+        return (str(chosen or "").strip(),)
+
+
 NODE_CLASS_MAPPINGS = {
     "AnimaCameraPanel": AnimaCameraPanel,
+    "AnimaCameraSource": AnimaCameraSource,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "AnimaCameraPanel": "구도 설정",
+    "AnimaCameraSource": "카메라 선택",
 }
