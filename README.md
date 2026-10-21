@@ -25,7 +25,7 @@ Anima base(28블록)와 Anima 2.9B(40블록)에서 모델, LoRA, 3D 포즈를 �
 
 두 카메라를 한 장면에서 바꿔 보려면 이렇게 연결합니다.
 
-1. BSK를 쓰려면 [ComfyUI-bsk_UI](https://github.com/ikusag-png/ComfyUI_bsk_UI)의 `BSK_카메라 제어`를 설치합니다. 이 노드는 문장만 만들고 LoRA는 불러오지 않으므로, 프리셋에 `Anima/anima_bsk_camera_control.safetensors`를 모델 0.8, CLIP 0.8로 올립니다. 점을 오른쪽으로 끌면 태그는 `from left`입니다. 플러그인이 좌우 태그를 그렇게 적습니다. 이 노드는 시점 태그만 만들고, 캐릭터 위치는 그 태그를 본 모델이 다시 그립니다.
+1. BSK를 쓰려면 한국어 작업본 [ComfyUI-bsk_UI](https://github.com/dancingamer/ComfyUI-bsk_UI)의 `BSK_카메라 제어`를 설치합니다. 원본 저장소를 받으면 화면 문구와 이 PC에서 고친 불러오기 수정이 없습니다. 이 노드는 문장만 만들고 LoRA는 불러오지 않으므로, 프리셋에 `Anima/anima_bsk_camera_control.safetensors`를 모델 0.8, CLIP 0.8로 올립니다. 점을 오른쪽으로 끌면 태그는 `from left`입니다. 플러그인이 좌우 태그를 그렇게 적습니다. 이 노드는 시점 태그만 만들고, 캐릭터 위치는 그 태그를 본 모델이 다시 그립니다.
 2. 구도 설정을 쓰려면 `구도 설정`의 `camera_prompt` 출력만 사용합니다. 노드 안의 추가 프롬프트 칸은 연결하지 않습니다. 오른쪽은 `from_right`이고 가중치는 1을 넘지 않습니다. 이 노드도 시점 태그만 만듭니다. 스위치를 끄면 빈 문장을 냅니다.
 3. `카메라 선택`의 `bsk`와 `lakis`에 두 문장을 연결하고, source에서 `BSK` 또는 `LAKIS`를 고릅니다. 고른 출력을 `Anima LoRA 프롬프트`의 `camera_prompt`에 연결합니다. 기본값은 `BSK`입니다.
 4. 노드를 큐에 넣기 전에 `적용될 프롬프트`에서 카메라 문장, 스타일 태그, 켜진 T+ 트리거, 장면 문장이 이어져 보이는지 확인합니다. 이 칸은 읽기 전용입니다. 저장되고 실행되는 장면 문장은 위쪽 입력칸의 원래 문장입니다.
@@ -55,7 +55,7 @@ LoRA가 없는 2.9B에서는 28블록용 포즈 패치가 새로 끼워진 12개
 현재 워크플로는 이 패키지 밖에 있는 노드도 사용합니다. 같은 그래프를 열려면 다음 커스텀 노드가 필요합니다.
 
 - [ComfyUI-EasyUseAnima](https://github.com/n0va39/ComfyUI-EasyUseAnima) — `Anima LoRA Preset`. 트리거 미리보기도 이 패키지의 LoRA 메타데이터를 읽습니다.
-- [ComfyUI-bsk_UI](https://github.com/ikusag-png/ComfyUI_bsk_UI) — `BSK_카메라 제어`. 구도 설정만 쓸 때는 없어도 됩니다.
+- [ComfyUI-bsk_UI](https://github.com/dancingamer/ComfyUI-bsk_UI) — 한국어로 고친 `BSK_카메라 제어`. 구도 설정만 쓸 때는 없어도 됩니다.
 - [ComfyUI_toyxyz_test_nodes](https://github.com/toyxyz/ComfyUI_toyxyz_test_nodes) — 3D 포즈 에디터, 리전 페인터, `ComfyCoupleMask`
 - [ComfyUI-Image-Saver](https://github.com/alexopus/ComfyUI-Image-Saver) — 모델 이름과 시드가 들어가는 이미지 저장
 
